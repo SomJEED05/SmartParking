@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Parking Dashboard</title>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; background: #0f172a; color: #f8fafc; padding: 20px; }
+        h1 { color: #38bdf8; }
+        .status-box { margin-bottom: 20px; font-size: 1.1em; }
+        .card-container { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
+        .card { background: #1e293b; padding: 25px; border-radius: 15px; min-width: 160px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); }
+        .val { font-size: 3em; font-weight: bold; color: #4ade80; margin-top: 10px; }
+        .full { color: #f87171 !important; }
+    </style>
+</head>
+<body>
+
+    <h1>🅿️ Smart Parking Real-time Dashboard</h1>
+    <div class="status-box">สถานะการเชื่อมต่อ: <b id="status" style="color: #fbbf24;">กำลังเชื่อมต่อ...</b></div>
+
+    <div class="card-container">
+        <div class="card">
+            <div>ที่ว่างคงเหลือ</div>
+            <div class="val" id="slots">-</div>
+        </div>
+        <div class="card">
+            <div>รถในลานจอด</div>
+            <div class="val" id="inside" style="color: #60a5fa;">-</div>
+        </div>
+        <div class="card">
+            <div>สถานะลานจอด</div>
+            <div class="val" id="lotStatus">-</div>
+        </div>
+    </div>
+
+    <script>
+        // ใช้ WebSockets Port 8000 ของ HiveMQ
+        const broker = 'ws://broker.hivemq.com:8000/mqtt';
+        // ชื่อ Topic ของเราเอง (ตั้งให้ตรงกับ ESP32)
+        const topic = 'ingkarat_smart_parking_2026/data';
+
+        const client = mqtt.connect(broker, {
+            clientId: 'web_dash_' + Math.random().toString(16).substr(2, 8)
+        });
+
+        client.on('connect', () => {
+            document.getElementById('status').innerText = 'ออนไลน์ (Online)';
+            document.getElementById('status').style.color = '#4ade80';
+            client.subscribe(topic);
+        });
+
+        client.on('message', (t, msg) => {
+            try {
+                const data = JSON.parse(msg.toString());
+                document.getElementById('slots').innerText = data.slots;
+                document.getElementById('inside').innerText = data.inside;
+                
+                const statusElem = document.getElementById('lotStatus');
+                if (data.lotFull === 1) {
+                    statusElem.innerText = 'เต็ม';
+                    statusElem.classList.add('full');
+                } else {
+                    statusElem.innerText = 'มีที่ว่าง';
+                    statusElem.classList.remove('full');
+                }
+            } catch (e) {
+                console.error("JSON Error", e);
+            }
+        });
+
+        client.on('offline', () => {
+            document.getElementById('status').innerText = 'ออฟไลน์ (Offline)';
+            document.getElementById('status').style.color = '#f87171';
+        });
+    </script>
+</body>
+</html>
