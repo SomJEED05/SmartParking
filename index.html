@@ -4,60 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMART PARKING — ZONE A</title>
-    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
     <style>
-        :root {
-            --bg-color: #0b1329;
-            --card-bg: #152238;
-            --card-border: #1e3a5f;
-            --text-main: #ffffff;
-            --text-sub: #8a99ad;
-            --accent-blue: #3b82f6;
-            --status-green: #10b981;
-            --status-red: #ef4444;
-            --status-yellow: #f59e0b;
-        }
-
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-main); padding: 24px; min-height: 100vh; }
+        body { background-color: #0b1329; color: #ffffff; padding: 24px; min-height: 100vh; }
 
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-        .header-title { font-size: 1.5rem; font-weight: bold; }
-        .header-subtitle { font-size: 0.85rem; color: var(--text-sub); margin-top: 4px; }
+        .header-title { font-size: 1.6rem; font-weight: bold; }
+        .header-subtitle { font-size: 0.85rem; color: #8a99ad; margin-top: 4px; }
         .badge-container { display: flex; gap: 10px; }
         .badge { padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; display: flex; align-items: center; gap: 6px; }
-        .badge-offline { background: rgba(239, 68, 68, 0.2); color: var(--status-red); border: 1px solid var(--status-red); }
-        .badge-online { background: rgba(16, 185, 129, 0.2); color: var(--status-green); border: 1px solid var(--status-green); }
+        .badge-offline { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
+        .badge-online { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; }
         .badge-dot { width: 8px; height: 8px; border-radius: 50%; background-color: currentColor; }
 
-        .dashboard-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
-        .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 18px; position: relative; }
-        .card-title { font-size: 0.8rem; color: var(--text-sub); margin-bottom: 12px; }
-        .card-val { font-size: 2rem; font-weight: bold; }
-        .card-subtext { font-size: 0.75rem; color: var(--text-sub); margin-top: 8px; }
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 20px; }
+        .card { background: #152238; border: 1px solid #1e3a5f; border-radius: 12px; padding: 20px; }
+        .card-title { font-size: 0.9rem; color: #8a99ad; margin-bottom: 10px; }
+        .card-val { font-size: 2.2rem; font-weight: bold; }
+        .card-sub { font-size: 0.8rem; color: #8a99ad; margin-top: 6px; }
 
         .slots-card { grid-column: span 2; }
         .slots-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-        .slots-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-        .slot-box { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--card-border); border-radius: 10px; padding: 16px 10px; text-align: center; transition: all 0.3s; }
-        .slot-icon { width: 44px; height: 44px; border-radius: 8px; background: var(--accent-blue); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: bold; margin: 0 auto 10px auto; }
-        .slot-box.occupied .slot-icon { background: var(--status-red); }
-        .slot-name { font-size: 0.9rem; font-weight: bold; margin-bottom: 4px; }
-        .slot-time { font-size: 0.75rem; color: var(--text-sub); }
+        .slots-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+        .slot-box { background: rgba(255, 255, 255, 0.04); border: 1px solid #1e3a5f; border-radius: 12px; padding: 24px 12px; text-align: center; transition: all 0.3s; }
+        .slot-icon { width: 50px; height: 50px; border-radius: 10px; background: #3b82f6; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold; margin: 0 auto 12px auto; }
+        .slot-box.occupied .slot-icon { background: #ef4444; }
+        .slot-name { font-size: 1rem; font-weight: bold; }
+        .slot-time { font-size: 0.8rem; color: #8a99ad; margin-top: 4px; }
+        .no-data-tag { font-size: 0.85rem; color: #f59e0b; }
 
-        .info-row { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-sub); }
-        .no-data-tag { font-size: 0.8rem; color: var(--status-yellow); margin-top: 12px; display: inline-block; }
-
-        .lcd-card { grid-column: span 4; }
-        .lcd-screen { background: #061a0c; border: 3px solid #1c3822; border-radius: 8px; padding: 14px; font-family: 'Courier New', Courier, monospace; color: #33ff66; text-shadow: 0 0 5px rgba(51, 255, 102, 0.5); font-size: 1.05rem; line-height: 1.4; min-height: 110px; }
-
-        @media (max-width: 900px) {
-            .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
-            .slots-card, .lcd-card { grid-column: span 2; }
-        }
-        @media (max-width: 550px) {
-            .dashboard-grid { grid-template-columns: 1fr; }
-            .slots-card, .lcd-card { grid-column: span 1; }
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: 1fr; }
+            .slots-card { grid-column: span 1; }
             .slots-grid { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
@@ -75,7 +54,8 @@
         </div>
     </div>
 
-    <div class="dashboard-grid">
+    <!-- แถบสรุปตัวเลข 2 การ์ด -->
+    <div class="grid">
         <div class="card">
             <div class="card-title">ที่จอดว่าง</div>
             <div class="card-val" id="val-free-slots">— / 4</div>
@@ -83,145 +63,117 @@
         <div class="card">
             <div class="card-title">รถภายใน</div>
             <div class="card-val" id="val-inside">—</div>
-            <div class="card-subtext">นับจาก pass เข้า / ออก</div>
-        </div>
-        <div class="card">
-            <div class="card-title">รถกำลังรอเข้า</div>
-            <div class="card-val" id="val-pending">—</div>
-            <div class="card-subtext">pending จาก ESP32</div>
-        </div>
-        <div class="card">
-            <div class="card-title">สถานะการเชื่อมต่อ</div>
-            <div class="card-val" id="val-status-title" style="font-size: 1.2rem; margin-top: 6px; color: var(--status-red);">ESP32 OFFLINE</div>
-            <div class="card-subtext" id="val-status-sub">ยังไม่มีข้อมูล</div>
+            <div class="card-sub">นับจาก pass เข้า / ออก</div>
         </div>
     </div>
 
-    <div class="dashboard-grid">
+    <!-- แถบแสดงสถานะช่องจอด A1-A4 -->
+    <div class="grid">
         <div class="card slots-card">
             <div class="slots-header">
-                <div>
-                    <div class="card-title" style="margin:0;">ช่องจอด</div>
-                    <div style="font-size: 1.2rem; font-weight: bold; margin-top: 4px;">A1 — A4</div>
-                </div>
+                <div class="card-title" style="font-size: 1.1rem; font-weight: bold; color: white; margin:0;">ช่องจอด A1 — A4</div>
                 <div class="no-data-tag" id="slots-status-tag">ไม่มีข้อมูลจาก ESP32</div>
             </div>
             <div class="slots-grid">
                 <div class="slot-box" id="slot-box-0">
                     <div class="slot-icon">P</div>
                     <div class="slot-name">A1</div>
-                    <div class="slot-time" id="slot-time-0">—</div>
+                    <div class="slot-time" id="slot-time-0">ว่าง</div>
                 </div>
                 <div class="slot-box" id="slot-box-1">
                     <div class="slot-icon">P</div>
                     <div class="slot-name">A2</div>
-                    <div class="slot-time" id="slot-time-1">—</div>
+                    <div class="slot-time" id="slot-time-1">ว่าง</div>
                 </div>
                 <div class="slot-box" id="slot-box-2">
                     <div class="slot-icon">P</div>
                     <div class="slot-name">A3</div>
-                    <div class="slot-time" id="slot-time-2">—</div>
+                    <div class="slot-time" id="slot-time-2">ว่าง</div>
                 </div>
                 <div class="slot-box" id="slot-box-3">
                     <div class="slot-icon">P</div>
                     <div class="slot-name">A4</div>
-                    <div class="slot-time" id="slot-time-3">—</div>
+                    <div class="slot-time" id="slot-time-3">ว่าง</div>
                 </div>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-title">ไม้กั้นทางเข้า</div>
-            <div class="info-row"><span>S1:</span><b id="gate-in-s1">—</b></div>
-            <div class="info-row"><span>S2:</span><b id="gate-in-s2">—</b></div>
-            <div class="info-row"><span>ผ่านเข้า:</span><b id="gate-in-pass">—</b></div>
-            <div class="no-data-tag" id="gate-in-tag">ไม่มีข้อมูล</div>
-        </div>
-
-        <div class="card">
-            <div class="card-title">ไม้กั้นทางออก</div>
-            <div class="info-row"><span>Sensor:</span><b id="gate-out-sensor">—</b></div>
-            <div class="info-row"><span>ผ่านออก:</span><b id="gate-out-pass">—</b></div>
-            <div class="no-data-tag" id="gate-out-tag" style="margin-top:28px;">ไม่มีข้อมูล</div>
-        </div>
-    </div>
-
-    <div class="dashboard-grid">
-        <div class="card lcd-card">
-            <div class="card-title">LCD 20×4 จำลอง</div>
-            <div class="lcd-screen" id="lcd-display">
-                ESP32 OFFLINE<br>No data...
             </div>
         </div>
     </div>
 
     <script>
         const broker = 'wss://broker.hivemq.com:8884/mqtt';
-        const mainTopic = 'ingkarat_smart_parking_2026/data';
+        const topicName = 'ingkarat_smart_parking_2026/data';
 
-        let lastMessageTime = 0;
-        const OFFLINE_TIMEOUT = 60000;
+        function updateSlotsFromMask(maskStr) {
+            const tag = document.getElementById('slots-status-tag');
+            if (tag) tag.style.display = 'none';
 
-        const client = mqtt.connect(broker, {
-            clientId: 'web_dash_' + Math.random().toString(16).substr(2, 8)
+            for (let i = 0; i < 4; i++) {
+                const box = document.getElementById(`slot-box-${i}`);
+                const timeElem = document.getElementById(`slot-time-${i}`);
+                if (!box) continue;
+
+                const isOccupied = (maskStr && maskStr[i] === '1');
+                if (isOccupied) {
+                    box.classList.add('occupied');
+                    if (timeElem) timeElem.innerText = 'มีรถจอด';
+                } else {
+                    box.classList.remove('occupied');
+                    if (timeElem) timeElem.innerText = 'ว่าง';
+                }
+            }
+        }
+
+        function setOnline(isOnline) {
+            const badge = document.getElementById('badge-esp32');
+            if (badge) {
+                if (isOnline) {
+                    badge.className = 'badge badge-online';
+                    badge.innerHTML = '<span class="badge-dot"></span> ESP32 ONLINE';
+                } else {
+                    badge.className = 'badge badge-offline';
+                    badge.innerHTML = '<span class="badge-dot"></span> ESP32 OFFLINE';
+                }
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (typeof mqtt === 'undefined') {
+                console.error('MQTT Library not loaded');
+                return;
+            }
+
+            const client = mqtt.connect(broker, {
+                clientId: 'web_dash_' + Math.random().toString(16).substr(2, 8)
+            });
+
+            client.on('connect', () => {
+                const mqttBadge = document.getElementById('badge-mqtt');
+                if (mqttBadge) {
+                    mqttBadge.className = 'badge badge-online';
+                    mqttBadge.innerHTML = '<span class="badge-dot"></span> CONNECTED';
+                }
+                client.subscribe(topicName);
+            });
+
+            client.on('message', (t, msg) => {
+                setOnline(true);
+                try {
+                    const data = JSON.parse(msg.toString());
+                    
+                    if (data.slots !== undefined) {
+                        document.getElementById('val-free-slots').innerText = data.slots + ' / 4';
+                    }
+                    if (data.inside !== undefined) {
+                        document.getElementById('val-inside').innerText = data.inside;
+                    }
+                    if (data.s !== undefined) {
+                        updateSlotsFromMask(data.s);
+                    }
+                } catch (e) {
+                    console.error("JSON parse err", e);
+                }
+            });
         });
-
-        client.on('connect', () => {
-            const mqttBadge = document.getElementById('badge-mqtt');
-            mqttBadge.className = 'badge badge-online';
-            mqttBadge.innerHTML = '<span class="badge-dot"></span> CONNECTED';
-            client.subscribe(mainTopic);
-        });
-
-        client.on('message', (topic, message) => {
-    setESP32OnlineState(true);
-    try {
-        const data = JSON.parse(message.toString());
-        
-        // 1. อัปเดตการ์ดสรุปตัวเลข
-        if (data.slots !== undefined) {
-            document.getElementById('val-free-slots').innerText = data.slots + ' / 4';
-        }
-        if (data.inside !== undefined) {
-            document.getElementById('val-inside').innerText = data.inside;
-        }
-        if (data.lotFull !== undefined) {
-            const title = document.getElementById('val-status-title');
-            title.innerText = data.lotFull === 1 ? 'LOT FULL' : 'NORMAL';
-            title.style.color = data.lotFull === 1 ? '#ef4444' : '#10b981';
-        }
-
-        // 2. [จุดที่ต้องเพิ่ม] อัปเดตสถานะช่องจอด A1-A4 จากสตริง "s"
-        if (data.s) {
-            updateSlotsFromMask(data.s);
-        }
-    } catch (e) {
-        console.error("JSON parse error:", e);
-    }
-});
-
-// ฟังก์ชันแปลงค่า "s" มาเปลี่ยนสีกล่อง A1-A4 และปิดป้ายเตือน
-function updateSlotsFromMask(maskStr) {
-    // ซ่อนป้าย "ไม่มีข้อมูลจาก ESP32"
-    const tag = document.getElementById('slots-status-tag');
-    if (tag) tag.style.display = 'none';
-
-    // เปลี่ยนสถานะตามแต่ละช่อง (0 = ว่าง/ฟ้า, 1 = มีรถ/แดง)
-    for (let i = 0; i < 4; i++) {
-        const box = document.getElementById(`slot-box-${i}`);
-        const timeElem = document.getElementById(`slot-time-${i}`);
-        if (!box) continue;
-
-        const isOccupied = maskStr[i] === '1';
-        if (isOccupied) {
-            box.classList.add('occupied');
-            if (timeElem) timeElem.innerText = 'มีรถจอด';
-        } else {
-            box.classList.remove('occupied');
-            if (timeElem) timeElem.innerText = 'ว่าง';
-        }
-    }
-}
     </script>
 </body>
 </html>
