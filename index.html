@@ -174,45 +174,50 @@
         });
 
         client.on('message', (topic, message) => {
-            lastMessageTime = Date.now();
-            setESP32OnlineState(true);
-
-            try {
-                const data = JSON.parse(message.toString());
-                if (data.slots !== undefined) {
-                    document.getElementById('val-free-slots').innerText = data.slots + ' / 4';
-                }
-                if (data.inside !== undefined) {
-                    document.getElementById('val-inside').innerText = data.inside;
-                }
-                if (data.lotFull !== undefined) {
-                    document.getElementById('val-status-title').innerText = data.lotFull === 1 ? 'LOT FULL' : 'NORMAL';
-                    document.getElementById('val-status-title').style.color = data.lotFull === 1 ? 'var(--status-red)' : 'var(--status-green)';
-                }
-            } catch (err) {
-                console.error("JSON Parse Error:", err);
-            }
-        });
-
-        function setESP32OnlineState(isOnline) {
-            const badge = document.getElementById('badge-esp32');
-            const title = document.getElementById('val-status-title');
-            const sub = document.getElementById('val-status-sub');
-
-            if (isOnline) {
-                badge.className = 'badge badge-online';
-                badge.innerHTML = '<span class="badge-dot"></span> ESP32 ONLINE';
-                title.innerText = 'CONNECTED';
-                title.style.color = 'var(--status-green)';
-                sub.innerText = 'รับส่งข้อมูลปกติ';
-            } else {
-                badge.className = 'badge badge-offline';
-                badge.innerHTML = '<span class="badge-dot"></span> ESP32 OFFLINE';
-                title.innerText = 'ESP32 OFFLINE';
-                title.style.color = 'var(--status-red)';
-                sub.innerText = 'ยังไม่มีข้อมูล';
-            }
+    setESP32OnlineState(true);
+    try {
+        const data = JSON.parse(message.toString());
+        if (data.slots !== undefined) {
+            document.getElementById('val-free-slots').innerText = data.slots + ' / 4';
         }
+        if (data.inside !== undefined) {
+            document.getElementById('val-inside').innerText = data.inside;
+        }
+        if (data.lotFull !== undefined) {
+            const title = document.getElementById('val-status-title');
+            title.innerText = data.lotFull === 1 ? 'LOT FULL' : 'NORMAL';
+            title.style.color = data.lotFull === 1 ? '#ef4444' : '#10b981';
+        }
+
+        // [เพิ่มจุดนี้] อัปเดตสถานะช่องจอด A1-A4
+        if (data.s) {
+            updateSlotsFromMask(data.s);
+        }
+    } catch (e) {
+        console.error("JSON parse err", e);
+    }
+});
+
+// ฟังก์ชันเปลี่ยนสีช่อง A1-A4 (มีให้อยู่แล้วในโค้ดเดิม ตรวจเช็คว่ามีฟังก์ชันนี้อยู่ด้านล่าง script ไหม)
+function updateSlotsFromMask(maskStr) {
+    const tag = document.getElementById('slots-status-tag');
+    if (tag) tag.style.display = 'none';
+    
+    for (let i = 0; i < 4; i++) {
+        const box = document.getElementById(`slot-box-${i}`);
+        const timeElem = document.getElementById(`slot-time-${i}`);
+        if (!box) continue;
+        
+        const isOccupied = maskStr[i] === '1';
+        if (isOccupied) {
+            box.classList.add('occupied');
+            if (timeElem) timeElem.innerText = 'มีรถจอด';
+        } else {
+            box.classList.remove('occupied');
+            if (timeElem) timeElem.innerText = 'ว่าง';
+        }
+    }
+}
     </script>
 </body>
 </html>
