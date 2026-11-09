@@ -174,45 +174,54 @@
         });
 
         client.on('message', (topic, message) => {
-            lastMessageTime = Date.now();
-            setESP32OnlineState(true);
-
-            try {
-                const data = JSON.parse(message.toString());
-                if (data.slots !== undefined) {
-                    document.getElementById('val-free-slots').innerText = data.slots + ' / 4';
-                }
-                if (data.inside !== undefined) {
-                    document.getElementById('val-inside').innerText = data.inside;
-                }
-                if (data.lotFull !== undefined) {
-                    document.getElementById('val-status-title').innerText = data.lotFull === 1 ? 'LOT FULL' : 'NORMAL';
-                    document.getElementById('val-status-title').style.color = data.lotFull === 1 ? 'var(--status-red)' : 'var(--status-green)';
-                }
-            } catch (err) {
-                console.error("JSON Parse Error:", err);
-            }
-        });
-
-        function setESP32OnlineState(isOnline) {
-            const badge = document.getElementById('badge-esp32');
-            const title = document.getElementById('val-status-title');
-            const sub = document.getElementById('val-status-sub');
-
-            if (isOnline) {
-                badge.className = 'badge badge-online';
-                badge.innerHTML = '<span class="badge-dot"></span> ESP32 ONLINE';
-                title.innerText = 'CONNECTED';
-                title.style.color = 'var(--status-green)';
-                sub.innerText = 'รับส่งข้อมูลปกติ';
-            } else {
-                badge.className = 'badge badge-offline';
-                badge.innerHTML = '<span class="badge-dot"></span> ESP32 OFFLINE';
-                title.innerText = 'ESP32 OFFLINE';
-                title.style.color = 'var(--status-red)';
-                sub.innerText = 'ยังไม่มีข้อมูล';
-            }
+    setESP32OnlineState(true);
+    try {
+        const data = JSON.parse(message.toString());
+        
+        // 1. อัปเดตการ์ดสรุปตัวเลข
+        if (data.slots !== undefined) {
+            document.getElementById('val-free-slots').innerText = data.slots + ' / 4';
         }
+        if (data.inside !== undefined) {
+            document.getElementById('val-inside').innerText = data.inside;
+        }
+        if (data.lotFull !== undefined) {
+            const title = document.getElementById('val-status-title');
+            title.innerText = data.lotFull === 1 ? 'LOT FULL' : 'NORMAL';
+            title.style.color = data.lotFull === 1 ? '#ef4444' : '#10b981';
+        }
+
+        // 2. [จุดที่ต้องเพิ่ม] อัปเดตสถานะช่องจอด A1-A4 จากสตริง "s"
+        if (data.s) {
+            updateSlotsFromMask(data.s);
+        }
+    } catch (e) {
+        console.error("JSON parse error:", e);
+    }
+});
+
+// ฟังก์ชันแปลงค่า "s" มาเปลี่ยนสีกล่อง A1-A4 และปิดป้ายเตือน
+function updateSlotsFromMask(maskStr) {
+    // ซ่อนป้าย "ไม่มีข้อมูลจาก ESP32"
+    const tag = document.getElementById('slots-status-tag');
+    if (tag) tag.style.display = 'none';
+
+    // เปลี่ยนสถานะตามแต่ละช่อง (0 = ว่าง/ฟ้า, 1 = มีรถ/แดง)
+    for (let i = 0; i < 4; i++) {
+        const box = document.getElementById(`slot-box-${i}`);
+        const timeElem = document.getElementById(`slot-time-${i}`);
+        if (!box) continue;
+
+        const isOccupied = maskStr[i] === '1';
+        if (isOccupied) {
+            box.classList.add('occupied');
+            if (timeElem) timeElem.innerText = 'มีรถจอด';
+        } else {
+            box.classList.remove('occupied');
+            if (timeElem) timeElem.innerText = 'ว่าง';
+        }
+    }
+}
     </script>
 </body>
 </html>
