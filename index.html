@@ -21,9 +21,8 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: var(--bg-color); color: var(--text-main); padding: 24px; min-height: 100vh; }
 
-        /* Header */
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-        .header-title { display: flex; align-items: center; gap: 10px; font-size: 1.5rem; font-weight: bold; }
+        .header-title { font-size: 1.5rem; font-weight: bold; }
         .header-subtitle { font-size: 0.85rem; color: var(--text-sub); margin-top: 4px; }
         .badge-container { display: flex; gap: 10px; }
         .badge { padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; display: flex; align-items: center; gap: 6px; }
@@ -31,16 +30,12 @@
         .badge-online { background: rgba(16, 185, 129, 0.2); color: var(--status-green); border: 1px solid var(--status-green); }
         .badge-dot { width: 8px; height: 8px; border-radius: 50%; background-color: currentColor; }
 
-        /* Dashboard Grid Layout */
         .dashboard-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
-        
-        /* Card Styles */
         .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 18px; position: relative; }
         .card-title { font-size: 0.8rem; color: var(--text-sub); margin-bottom: 12px; }
         .card-val { font-size: 2rem; font-weight: bold; }
         .card-subtext { font-size: 0.75rem; color: var(--text-sub); margin-top: 8px; }
 
-        /* Slot Layout (A1-A4) */
         .slots-card { grid-column: span 2; }
         .slots-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
         .slots-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
@@ -50,12 +45,10 @@
         .slot-name { font-size: 0.9rem; font-weight: bold; margin-bottom: 4px; }
         .slot-time { font-size: 0.75rem; color: var(--text-sub); }
 
-        /* Info Block Inside Cards */
         .info-row { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-sub); }
         .no-data-tag { font-size: 0.8rem; color: var(--status-yellow); margin-top: 12px; display: inline-block; }
 
-        /* Bottom LCD Section */
-        .lcd-card { grid-column: span 2; }
+        .lcd-card { grid-column: span 4; }
         .lcd-screen { background: #061a0c; border: 3px solid #1c3822; border-radius: 8px; padding: 14px; font-family: 'Courier New', Courier, monospace; color: #33ff66; text-shadow: 0 0 5px rgba(51, 255, 102, 0.5); font-size: 1.05rem; line-height: 1.4; min-height: 110px; }
 
         @media (max-width: 900px) {
@@ -64,5 +57,4 @@
         }
         @media (max-width: 550px) {
             .dashboard-grid { grid-template-columns: 1fr; }
-            .slots-card, .lcd-card { grid-column: span 1; }
-            .slots-grid { grid-template-columns: repeat(2, 1fr); }
+            .slots-card, .lcd-card { grid-column: span 1
