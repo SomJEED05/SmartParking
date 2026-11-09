@@ -57,4 +57,162 @@
         }
         @media (max-width: 550px) {
             .dashboard-grid { grid-template-columns: 1fr; }
-            .slots-card, .lcd-card { grid-column: span 1
+            .slots-card, .lcd-card { grid-column: span 1; }
+            .slots-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div>
+            <div class="header-title">🚗 SMART PARKING — ZONE A</div>
+            <div class="header-subtitle">ESP32 + MQTT Dashboard</div>
+        </div>
+        <div class="badge-container">
+            <div id="badge-esp32" class="badge badge-offline"><span class="badge-dot"></span> ESP32 OFFLINE</div>
+            <div id="badge-mqtt" class="badge badge-offline"><span class="badge-dot"></span> CONNECTED</div>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="card">
+            <div class="card-title">ที่จอดว่าง</div>
+            <div class="card-val" id="val-free-slots">— / 4</div>
+        </div>
+        <div class="card">
+            <div class="card-title">รถภายใน</div>
+            <div class="card-val" id="val-inside">—</div>
+            <div class="card-subtext">นับจาก pass เข้า / ออก</div>
+        </div>
+        <div class="card">
+            <div class="card-title">รถกำลังรอเข้า</div>
+            <div class="card-val" id="val-pending">—</div>
+            <div class="card-subtext">pending จาก ESP32</div>
+        </div>
+        <div class="card">
+            <div class="card-title">สถานะการเชื่อมต่อ</div>
+            <div class="card-val" id="val-status-title" style="font-size: 1.2rem; margin-top: 6px; color: var(--status-red);">ESP32 OFFLINE</div>
+            <div class="card-subtext" id="val-status-sub">ยังไม่มีข้อมูล</div>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="card slots-card">
+            <div class="slots-header">
+                <div>
+                    <div class="card-title" style="margin:0;">ช่องจอด</div>
+                    <div style="font-size: 1.2rem; font-weight: bold; margin-top: 4px;">A1 — A4</div>
+                </div>
+                <div class="no-data-tag" id="slots-status-tag">ไม่มีข้อมูลจาก ESP32</div>
+            </div>
+            <div class="slots-grid">
+                <div class="slot-box" id="slot-box-0">
+                    <div class="slot-icon">P</div>
+                    <div class="slot-name">A1</div>
+                    <div class="slot-time" id="slot-time-0">—</div>
+                </div>
+                <div class="slot-box" id="slot-box-1">
+                    <div class="slot-icon">P</div>
+                    <div class="slot-name">A2</div>
+                    <div class="slot-time" id="slot-time-1">—</div>
+                </div>
+                <div class="slot-box" id="slot-box-2">
+                    <div class="slot-icon">P</div>
+                    <div class="slot-name">A3</div>
+                    <div class="slot-time" id="slot-time-2">—</div>
+                </div>
+                <div class="slot-box" id="slot-box-3">
+                    <div class="slot-icon">P</div>
+                    <div class="slot-name">A4</div>
+                    <div class="slot-time" id="slot-time-3">—</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">ไม้กั้นทางเข้า</div>
+            <div class="info-row"><span>S1:</span><b id="gate-in-s1">—</b></div>
+            <div class="info-row"><span>S2:</span><b id="gate-in-s2">—</b></div>
+            <div class="info-row"><span>ผ่านเข้า:</span><b id="gate-in-pass">—</b></div>
+            <div class="no-data-tag" id="gate-in-tag">ไม่มีข้อมูล</div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">ไม้กั้นทางออก</div>
+            <div class="info-row"><span>Sensor:</span><b id="gate-out-sensor">—</b></div>
+            <div class="info-row"><span>ผ่านออก:</span><b id="gate-out-pass">—</b></div>
+            <div class="no-data-tag" id="gate-out-tag" style="margin-top:28px;">ไม่มีข้อมูล</div>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="card lcd-card">
+            <div class="card-title">LCD 20×4 จำลอง</div>
+            <div class="lcd-screen" id="lcd-display">
+                ESP32 OFFLINE<br>No data...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const broker = 'wss://broker.hivemq.com:8884/mqtt';
+        const mainTopic = 'ingkarat_smart_parking_2026/data';
+
+        let lastMessageTime = 0;
+        const OFFLINE_TIMEOUT = 60000;
+
+        const client = mqtt.connect(broker, {
+            clientId: 'web_dash_' + Math.random().toString(16).substr(2, 8)
+        });
+
+        client.on('connect', () => {
+            const mqttBadge = document.getElementById('badge-mqtt');
+            mqttBadge.className = 'badge badge-online';
+            mqttBadge.innerHTML = '<span class="badge-dot"></span> CONNECTED';
+            client.subscribe(mainTopic);
+        });
+
+        client.on('message', (topic, message) => {
+            lastMessageTime = Date.now();
+            setESP32OnlineState(true);
+
+            try {
+                const data = JSON.parse(message.toString());
+                if (data.slots !== undefined) {
+                    document.getElementById('val-free-slots').innerText = data.slots + ' / 4';
+                }
+                if (data.inside !== undefined) {
+                    document.getElementById('val-inside').innerText = data.inside;
+                }
+                if (data.lotFull !== undefined) {
+                    document.getElementById('val-status-title').innerText = data.lotFull === 1 ? 'LOT FULL' : 'NORMAL';
+                    document.getElementById('val-status-title').style.color = data.lotFull === 1 ? 'var(--status-red)' : 'var(--status-green)';
+                }
+            } catch (err) {
+                console.error("JSON Parse Error:", err);
+            }
+        });
+
+        function setESP32OnlineState(isOnline) {
+            const badge = document.getElementById('badge-esp32');
+            const title = document.getElementById('val-status-title');
+            const sub = document.getElementById('val-status-sub');
+
+            if (isOnline) {
+                badge.className = 'badge badge-online';
+                badge.innerHTML = '<span class="badge-dot"></span> ESP32 ONLINE';
+                title.innerText = 'CONNECTED';
+                title.style.color = 'var(--status-green)';
+                sub.innerText = 'รับส่งข้อมูลปกติ';
+            } else {
+                badge.className = 'badge badge-offline';
+                badge.innerHTML = '<span class="badge-dot"></span> ESP32 OFFLINE';
+                title.innerText = 'ESP32 OFFLINE';
+                title.style.color = 'var(--status-red)';
+                sub.innerText = 'ยังไม่มีข้อมูล';
+            }
+        }
+    </script>
+</body>
+</html>
