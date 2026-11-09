@@ -3,77 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Parking Dashboard</title>
+    <title>SMART PARKING — ZONE A</title>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; background: #0f172a; color: #f8fafc; padding: 20px; }
-        h1 { color: #38bdf8; }
-        .status-box { margin-bottom: 20px; font-size: 1.1em; }
-        .card-container { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
-        .card { background: #1e293b; padding: 25px; border-radius: 15px; min-width: 160px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); }
-        .val { font-size: 3em; font-weight: bold; color: #4ade80; margin-top: 10px; }
-        .full { color: #f87171 !important; }
-    </style>
-</head>
-<body>
+        :root {
+            --bg-color: #0b1329;
+            --card-bg: #152238;
+            --card-border: #1e3a5f;
+            --text-main: #ffffff;
+            --text-sub: #8a99ad;
+            --accent-blue: #3b82f6;
+            --status-green: #10b981;
+            --status-red: #ef4444;
+            --status-yellow: #f59e0b;
+        }
 
-    <h1>🅿️ Smart Parking Real-time Dashboard</h1>
-    <div class="status-box">สถานะการเชื่อมต่อ: <b id="status" style="color: #fbbf24;">กำลังเชื่อมต่อ...</b></div>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); padding: 24px; min-height: 100vh; }
 
-    <div class="card-container">
-        <div class="card">
-            <div>ที่ว่างคงเหลือ</div>
-            <div class="val" id="slots">-</div>
-        </div>
-        <div class="card">
-            <div>รถในลานจอด</div>
-            <div class="val" id="inside" style="color: #60a5fa;">-</div>
-        </div>
-        <div class="card">
-            <div>สถานะลานจอด</div>
-            <div class="val" id="lotStatus">-</div>
-        </div>
-    </div>
+        /* Header */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .header-title { display: flex; align-items: center; gap: 10px; font-size: 1.5rem; font-weight: bold; }
+        .header-subtitle { font-size: 0.85rem; color: var(--text-sub); margin-top: 4px; }
+        .badge-container { display: flex; gap: 10px; }
+        .badge { padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; display: flex; align-items: center; gap: 6px; }
+        .badge-offline { background: rgba(239, 68, 68, 0.2); color: var(--status-red); border: 1px solid var(--status-red); }
+        .badge-online { background: rgba(16, 185, 129, 0.2); color: var(--status-green); border: 1px solid var(--status-green); }
+        .badge-dot { width: 8px; height: 8px; border-radius: 50%; background-color: currentColor; }
 
-    <script>
-        // ใช้ WebSockets Port 8000 ของ HiveMQ
-        const broker = 'wss://broker.hivemq.com:8884/mqtt';
-        // ชื่อ Topic ของเราเอง (ตั้งให้ตรงกับ ESP32)
-        const topic = 'ingkarat_smart_parking_2026/data';
+        /* Dashboard Grid Layout */
+        .dashboard-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+        
+        /* Card Styles */
+        .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 18px; position: relative; }
+        .card-title { font-size: 0.8rem; color: var(--text-sub); margin-bottom: 12px; }
+        .card-val { font-size: 2rem; font-weight: bold; }
+        .card-subtext { font-size: 0.75rem; color: var(--text-sub); margin-top: 8px; }
 
-        const client = mqtt.connect(broker, {
-            clientId: 'web_dash_' + Math.random().toString(16).substr(2, 8)
-        });
+        /* Slot Layout (A1-A4) */
+        .slots-card { grid-column: span 2; }
+        .slots-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .slots-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+        .slot-box { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--card-border); border-radius: 10px; padding: 16px 10px; text-align: center; transition: all 0.3s; }
+        .slot-icon { width: 44px; height: 44px; border-radius: 8px; background: var(--accent-blue); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: bold; margin: 0 auto 10px auto; }
+        .slot-box.occupied .slot-icon { background: var(--status-red); }
+        .slot-name { font-size: 0.9rem; font-weight: bold; margin-bottom: 4px; }
+        .slot-time { font-size: 0.75rem; color: var(--text-sub); }
 
-        client.on('connect', () => {
-            document.getElementById('status').innerText = 'ออนไลน์ (Online)';
-            document.getElementById('status').style.color = '#4ade80';
-            client.subscribe(topic);
-        });
+        /* Info Block Inside Cards */
+        .info-row { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-sub); }
+        .no-data-tag { font-size: 0.8rem; color: var(--status-yellow); margin-top: 12px; display: inline-block; }
 
-        client.on('message', (t, msg) => {
-            try {
-                const data = JSON.parse(msg.toString());
-                document.getElementById('slots').innerText = data.slots;
-                document.getElementById('inside').innerText = data.inside;
-                
-                const statusElem = document.getElementById('lotStatus');
-                if (data.lotFull === 1) {
-                    statusElem.innerText = 'เต็ม';
-                    statusElem.classList.add('full');
-                } else {
-                    statusElem.innerText = 'มีที่ว่าง';
-                    statusElem.classList.remove('full');
-                }
-            } catch (e) {
-                console.error("JSON Error", e);
-            }
-        });
+        /* Bottom LCD Section */
+        .lcd-card { grid-column: span 2; }
+        .lcd-screen { background: #061a0c; border: 3px solid #1c3822; border-radius: 8px; padding: 14px; font-family: 'Courier New', Courier, monospace; color: #33ff66; text-shadow: 0 0 5px rgba(51, 255, 102, 0.5); font-size: 1.05rem; line-height: 1.4; min-height: 110px; }
 
-        client.on('offline', () => {
-            document.getElementById('status').innerText = 'ออฟไลน์ (Offline)';
-            document.getElementById('status').style.color = '#f87171';
-        });
-    </script>
-</body>
-</html>
+        @media (max-width: 900px) {
+            .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
+            .slots-card, .lcd-card { grid-column: span 2; }
+        }
+        @media (max-width: 550px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+            .slots-card, .lcd-card { grid-column: span 1; }
+            .slots-grid { grid-template-columns: repeat(2, 1fr); }
